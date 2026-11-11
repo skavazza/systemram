@@ -5,10 +5,12 @@ from cli import parse_args, run_cli
 from gui.main_window import MainWindow
 
 def main():
-    # Se argumentos de linha de comando foram passados (além do nome do script),
-    # executa no modo CLI headless sem abrir janela gráfica
-    if len(sys.argv) > 1:
-        args = parse_args(sys.argv[1:])
+    # Filtra argumentos vazios que possam vir de scripts de inicialização
+    clean_args = [arg for arg in sys.argv[1:] if arg.strip()]
+
+    # Se flags de linha de comando foram passadas, executa modo CLI headless
+    if clean_args:
+        args = parse_args(clean_args)
         sys.exit(run_cli(args))
 
     # Caso contrário, inicia a interface gráfica PyQt6

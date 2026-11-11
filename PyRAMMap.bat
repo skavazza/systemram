@@ -30,19 +30,9 @@ if not exist ".venv\Scripts\python.exe" (
     echo [*] Ambiente virtual configurado com sucesso!
 )
 
-:: 2. Verifica se ja possui privilegios de Administrador
-net session >nul 2>&1
-if %errorlevel% equ 0 goto :RUN
-
-:: 3. Se nao estiver elevado e for chamado sem argumentos (clique duplo na GUI), solicita elevacao UAC
-if "%~1"=="" (
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process cmd.exe -ArgumentList '/c \"\"%~f0\" __elevated\"' -Verb runAs -WindowStyle Hidden"
-    exit /b
-)
-
-:RUN
-if "%~1"=="__elevated" shift
-
-:: 4. Executa sempre pelo Python do ambiente virtual isolado .venv
+:: 2. Executa a aplicacao diretamente pelo Python do ambiente virtual
 call .venv\Scripts\python.exe main.py %*
-exit /b
+if errorlevel 1 (
+    echo.
+    echo [AVISO] Processo finalizado com codigo %errorlevel%.
+)
