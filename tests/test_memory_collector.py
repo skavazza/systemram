@@ -17,6 +17,18 @@ def test_get_memory_summary():
     assert summary.modified_bytes >= 0
     assert 0.0 <= summary.load_percent <= 100.0
 
+def test_memory_partitions_sum_not_exceeding_total():
+    summary = get_memory_summary()
+    total_partitioned = (
+        summary.in_use_bytes +
+        summary.standby_bytes +
+        summary.modified_bytes +
+        summary.free_bytes +
+        summary.zeroed_bytes
+    )
+    # The sum of non-overlapping physical RAM partitions must equal total_bytes
+    assert total_partitioned <= summary.total_bytes + 4096
+
 def test_get_priority_breakdown():
     breakdown = get_priority_breakdown()
     assert isinstance(breakdown, list)
@@ -39,3 +51,4 @@ def test_get_processes_memory_list():
     assert hasattr(first, "working_set")
     assert hasattr(first, "private_bytes")
     assert hasattr(first, "commit_bytes")
+

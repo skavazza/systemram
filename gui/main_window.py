@@ -2,8 +2,8 @@ from datetime import datetime
 from PyQt6.QtWidgets import (
     QMainWindow, QTabWidget, QMessageBox, QLabel, QApplication
 )
-from PyQt6.QtGui import QAction, QKeySequence, QFont
-from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtGui import QAction, QKeySequence, QFont, QCursor
+from PyQt6.QtCore import QThread, pyqtSignal, Qt
 
 from core.privileges import is_admin, restart_as_admin
 from core.memory_collector import (
@@ -32,12 +32,43 @@ class RefreshWorker(QThread):
         except Exception:
             pass
 
+class ActionWorker(QThread):
+    """Thread em segundo plano para execução de esvaziamento sem congelar a GUI."""
+    action_completed = pyqtSignal(bool, str)
+
+    def __init__(self, action_type: str, parent=None):
+        super().__init__(parent)
+        self.action_type = action_type
+
+    def run(self):
+        ok = False
+        msg = ""
+        try:
+            if self.action_type == "working_sets":
+                ok, msg, _ = empty_working_sets()
+            elif self.action_type == "system_cache":
+                ok, msg = empty_system_working_set()
+            elif self.action_type == "modified":
+                ok, msg = empty_modified_page_list()
+            elif self.action_type == "standby_all":
+                ok, msg = empty_standby_list(priority0_only=False)
+            elif self.action_type == "standby_p0":
+                ok, msg = empty_standby_list(priority0_only=True)
+        except Exception as e:
+            ok = False
+            msg = f"Erro inesperado: {str(e)}"
+
+        self.action_completed.emit(ok, msg)
+
 class MainWindow(QMainWindow):
     """Janela principal do PyRAMMap."""
     def __init__(self):
         super().__init__()
         self.setWindowTitle("PyRAMMap - Sysinternals RAMMap Python")
         self.resize(950, 680)
+
+        self.worker: RefreshWorker | None = None
+        self.action_worker: ActionWorker | None = None
 
         self._init_ui()
         self._init_menu()
@@ -64,10 +95,10 @@ class MainWindow(QMainWindow):
         # Menu File
         file_menu = menu_bar.addMenu("&File")
 
-        refresh_action = QAction("&Refresh", self)
-        refresh_action.setShortcut(QKeySequence("F5"))
-        refresh_action.triggered.connect(self.refresh_data)
-        file_menu.addAction(refresh_action)
+        self.refresh_action = QAction("&Refresh", self)
+        self.refresh_action.setShortcut(QKeySequence("F5"))
+        self.refresh_action.triggered.connect(self.refresh_data)
+        file_menu.addAction(self.refresh_action)
 
         file_menu.addSeparator()
 
@@ -83,27 +114,27 @@ class MainWindow(QMainWindow):
         file_menu.addAction(exit_action)
 
         # Menu Empty
-        empty_menu = menu_bar.addMenu("&Empty")
+        self.empty_menu = menu_bar.addMenu("&Empty")
 
         act_ws = QAction("Empty &Working Sets", self)
         act_ws.triggered.connect(lambda: self._execute_empty("working_sets"))
-        empty_menu.addAction(act_ws)
+        self.empty_menu.addAction(act_ws)
 
         act_sys = QAction("Empty &System Working Set", self)
         act_sys.triggered.connect(lambda: self._execute_empty("system_cache"))
-        empty_menu.addAction(act_sys)
+        self.empty_menu.addAction(act_sys)
 
         act_mod = QAction("Empty &Modified Page List", self)
         act_mod.triggered.connect(lambda: self._execute_empty("modified"))
-        empty_menu.addAction(act_mod)
+        self.empty_menu.addAction(act_mod)
 
         act_stb = QAction("Empty &Standby List", self)
         act_stb.triggered.connect(lambda: self._execute_empty("standby_all"))
-        empty_menu.addAction(act_stb)
+        self.empty_menu.addAction(act_stb)
 
         act_stb0 = QAction("Empty &Priority 0 Standby List", self)
         act_stb0.triggered.connect(lambda: self._execute_empty("standby_p0"))
-        empty_menu.addAction(act_stb0)
+        self.empty_menu.addAction(act_stb0)
 
         # Menu Help
         help_menu = menu_bar.addMenu("&Help")
@@ -129,9 +160,12 @@ class MainWindow(QMainWindow):
         self.status_bar.addPermanentWidget(self.status_time_lbl)
 
     def refresh_data(self):
-        """Dispara a coleta de dados de memória em background."""
+        """Dispara a coleta de dados de memória em background com proteção de concorrência."""
+        if self.worker and self.worker.isRunning():
+            return
+
         self.statusBar().showMessage("Atualizando dados de memória...")
-        self.worker = RefreshWorker()
+        self.worker = RefreshWorker(self)
         self.worker.data_ready.connect(self._on_data_ready)
         self.worker.start()
 
@@ -144,8 +178,17 @@ class MainWindow(QMainWindow):
         self.status_time_lbl.setText(f"Última atualização: {now_str} ")
         self.statusBar().showMessage(f"Pronto ({len(processes)} processos ativos analisados).", 4000)
 
+    def _set_ui_busy(self, busy: bool):
+        """Habilita ou desabilita ações de menu durante operações do kernel."""
+        self.empty_menu.setEnabled(not busy)
+        self.refresh_action.setEnabled(not busy)
+        if busy:
+            QApplication.setOverrideCursor(QCursor(Qt.CursorShape.WaitCursor))
+        else:
+            QApplication.restoreOverrideCursor()
+
     def _execute_empty(self, action_type: str):
-        """Executa a ação selecionada do menu Empty."""
+        """Executa a ação selecionada do menu Empty em background."""
         if not is_admin() and action_type != "working_sets":
             reply = QMessageBox.question(
                 self,
@@ -160,20 +203,18 @@ class MainWindow(QMainWindow):
                 restart_as_admin()
             return
 
-        ok = False
-        msg = ""
+        if self.action_worker and self.action_worker.isRunning():
+            return
 
-        if action_type == "working_sets":
-            ok, msg, _ = empty_working_sets()
-        elif action_type == "system_cache":
-            ok, msg = empty_system_working_set()
-        elif action_type == "modified":
-            ok, msg = empty_modified_page_list()
-        elif action_type == "standby_all":
-            ok, msg = empty_standby_list(priority0_only=False)
-        elif action_type == "standby_p0":
-            ok, msg = empty_standby_list(priority0_only=True)
+        self._set_ui_busy(True)
+        self.statusBar().showMessage("Executando operação de esvaziamento no kernel...")
 
+        self.action_worker = ActionWorker(action_type, self)
+        self.action_worker.action_completed.connect(self._on_action_completed)
+        self.action_worker.start()
+
+    def _on_action_completed(self, ok: bool, msg: str):
+        self._set_ui_busy(False)
         if ok:
             QMessageBox.information(self, "Ação Concluída", msg)
         else:

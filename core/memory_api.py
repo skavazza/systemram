@@ -83,6 +83,19 @@ kernel32 = ctypes.windll.kernel32
 psapi = ctypes.windll.psapi
 ntdll = ctypes.windll.ntdll
 
+# Explicit Win32 function signatures for 64-bit safety
+kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+kernel32.OpenProcess.restype = wintypes.HANDLE
+
+kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+kernel32.CloseHandle.restype = wintypes.BOOL
+
+kernel32.SetProcessWorkingSetSize.argtypes = [wintypes.HANDLE, ctypes.c_size_t, ctypes.c_size_t]
+kernel32.SetProcessWorkingSetSize.restype = wintypes.BOOL
+
+psapi.EmptyWorkingSet.argtypes = [wintypes.HANDLE]
+psapi.EmptyWorkingSet.restype = wintypes.BOOL
+
 def query_global_memory_status() -> MEMORYSTATUSEX:
     """Consulta o status da memória global física e virtual."""
     stat = MEMORYSTATUSEX()

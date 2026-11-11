@@ -88,8 +88,8 @@ def get_memory_summary() -> MemorySummary:
     zeroed_bytes = zeroed_pages * page_size
     total_bytes = int(stat.ullTotalPhys)
 
-    # Memória em uso = Total - (Standby + Free + Zeroed)
-    in_use_bytes = max(0, total_bytes - (standby_bytes + free_bytes + zeroed_bytes))
+    # Memória em uso (Ativa) = Total - (Standby + Modificada + Livre + Zerada)
+    in_use_bytes = max(0, total_bytes - (standby_bytes + modified_bytes + free_bytes + zeroed_bytes))
 
     return MemorySummary(
         total_bytes=total_bytes,
@@ -159,3 +159,4 @@ def get_processes_memory_list() -> list[ProcessMemoryInfo]:
     # Ordena decrescente por Working Set (maiores consumidores primeiro)
     proc_list.sort(key=lambda p: p.working_set, reverse=True)
     return proc_list
+

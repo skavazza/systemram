@@ -25,3 +25,12 @@ def test_main_window_menu_actions(qapp):
     assert "File" in menus or "&File" in menus
     assert "Empty" in menus or "&Empty" in menus
     assert "Help" in menus or "&Help" in menus
+
+def test_rapid_refresh_guarded(qapp):
+    win = MainWindow()
+    # Calling refresh_data multiple times rapidly shouldn't crash
+    win.refresh_data()
+    win.refresh_data()
+    win.refresh_data()
+    assert win.worker is not None
+

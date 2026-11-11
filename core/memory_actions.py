@@ -31,26 +31,29 @@ def empty_working_sets() -> tuple[bool, str, int]:
     total_scanned = 0
 
     for proc in psutil.process_iter(['pid']):
-        pid = proc.info['pid']
-        if pid <= 4:  # Ignora PID 0 (Idle) e PID 4 (System)
-            continue
+        try:
+            pid = proc.info['pid']
+            if pid <= 4:  # Ignora PID 0 (Idle) e PID 4 (System)
+                continue
 
-        total_scanned += 1
-        h_proc = kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_SET_QUOTA, False, pid)
-        if h_proc:
-            try:
-                # Esvazia o conjunto de trabalho do processo
-                if psapi.EmptyWorkingSet(h_proc):
-                    count_flushed += 1
-                else:
-                    # Alternativa padrão Win32
-                    max_size = (1 << (ctypes.sizeof(ctypes.c_size_t) * 8)) - 1
-                    if kernel32.SetProcessWorkingSetSize(h_proc, max_size, max_size):
+            total_scanned += 1
+            h_proc = kernel32.OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_SET_QUOTA, False, pid)
+            if h_proc:
+                try:
+                    # Esvazia o conjunto de trabalho do processo
+                    if psapi.EmptyWorkingSet(h_proc):
                         count_flushed += 1
-            except Exception:
-                pass
-            finally:
-                kernel32.CloseHandle(h_proc)
+                    else:
+                        # Alternativa padrão Win32
+                        max_size = (1 << (ctypes.sizeof(ctypes.c_size_t) * 8)) - 1
+                        if kernel32.SetProcessWorkingSetSize(h_proc, max_size, max_size):
+                            count_flushed += 1
+                except Exception:
+                    pass
+                finally:
+                    kernel32.CloseHandle(h_proc)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
 
     msg = f"Conjuntos de trabalho esvaziados em {count_flushed} de {total_scanned} processos."
     return True, msg, count_flushed
@@ -107,3 +110,4 @@ def empty_all() -> dict[str, tuple[bool, str]]:
         "modified_page_list": (mod_ok, mod_msg),
         "standby_list": (stb_ok, stb_msg),
     }
+

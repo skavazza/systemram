@@ -33,3 +33,12 @@ def test_system_memory_list_commands_enum():
     assert SYSTEM_MEMORY_LIST_COMMAND.MemoryFlushModifiedList == 1
     assert SYSTEM_MEMORY_LIST_COMMAND.MemoryPurgeStandbyList == 2
     assert SYSTEM_MEMORY_LIST_COMMAND.MemoryPurgeLowPriorityStandbyList == 3
+
+def test_ctypes_signatures_and_struct_size():
+    import ctypes
+    from core.memory_api import kernel32, psapi
+    assert ctypes.sizeof(SYSTEM_MEMORY_LIST_INFORMATION) == 176
+    assert hasattr(kernel32.SetProcessWorkingSetSize, "argtypes") and kernel32.SetProcessWorkingSetSize.argtypes is not None
+    assert hasattr(kernel32.OpenProcess, "argtypes") and kernel32.OpenProcess.argtypes is not None
+    assert hasattr(psapi.EmptyWorkingSet, "argtypes") and psapi.EmptyWorkingSet.argtypes is not None
+
