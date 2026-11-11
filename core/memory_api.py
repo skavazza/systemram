@@ -60,9 +60,9 @@ class SYSTEM_MEMORY_LIST_INFORMATION(ctypes.Structure):
         ("ModifiedPageCount", ctypes.c_size_t),
         ("ModifiedNoWritePageCount", ctypes.c_size_t),
         ("BadPageCount", ctypes.c_size_t),
-        ("PageBits", ctypes.c_size_t),
         ("PageCountByPriority", ctypes.c_size_t * 8),
         ("RepurposedPagesByPriority", ctypes.c_size_t * 8),
+        ("ModifiedPageCountPageFile", ctypes.c_size_t),
     ]
 
 class SYSTEM_FILECACHE_INFORMATION(ctypes.Structure):
@@ -125,7 +125,6 @@ def set_system_filecache(flush: bool = True) -> int:
     """Limpa o Working Set do cache de arquivos do sistema (classe 21)."""
     cache_info = SYSTEM_FILECACHE_INFORMATION()
     if flush:
-        # Definir -1 (ULONG_PTR máximo) esvazia o working set do cache
         max_size = (1 << (ctypes.sizeof(ctypes.c_size_t) * 8)) - 1
         cache_info.MinimumWorkingSet = max_size
         cache_info.MaximumWorkingSet = max_size
