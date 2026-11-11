@@ -136,3 +136,4 @@ def run_cli(args: argparse.Namespace) -> int:
 if __name__ == "__main__":
     cli_args = parse_args()
     sys.exit(run_cli(cli_args))
+

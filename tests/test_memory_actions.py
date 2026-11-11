@@ -40,3 +40,4 @@ def test_empty_all_contract():
     assert "system_working_set" in results
     assert "modified_page_list" in results
     assert "standby_list" in results
+

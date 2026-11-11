@@ -107,3 +107,4 @@ class TabProcesses(QWidget):
 
         self.table.setSortingEnabled(True)
         self.count_label.setText(f"{len(filtered)} processos listados")
+

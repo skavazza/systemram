@@ -454,3 +454,4 @@ Expected: PASS
 git add gui/main_window.py main.py tests/test_main_window.py
 git commit -m "feat(app): implement main window with empty actions menu and entry point"
 ```
+

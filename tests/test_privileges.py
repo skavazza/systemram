@@ -15,3 +15,4 @@ def test_enable_required_privileges():
     assert isinstance(privs, list)
     assert "SeProfileSingleProcessPrivilege" in privs
     assert "SeIncreaseQuotaPrivilege" in privs
+

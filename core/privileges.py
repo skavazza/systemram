@@ -87,3 +87,4 @@ def restart_as_admin() -> None:
     params = " ".join([f'"{arg}"' for arg in sys.argv])
     shell32.ShellExecuteW(None, "runas", sys.executable, params, None, 1)
     sys.exit(0)
+

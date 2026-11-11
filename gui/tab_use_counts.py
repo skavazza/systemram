@@ -160,3 +160,4 @@ class TabUseCounts(QWidget):
         modified_pct = (summary.modified_bytes / total_b) * 100
         free_pct = ((summary.free_bytes + summary.zeroed_bytes) / total_b) * 100
         self.dist_bar.set_percentages(in_use_pct, standby_pct, modified_pct, free_pct)
+

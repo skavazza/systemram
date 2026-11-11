@@ -149,3 +149,4 @@ O script suporta flags para execução rápida sem abrir a janela:
 2. `test_memory_api.py`: Teste das estruturas ctypes e chamadas de leitura `GlobalMemoryStatusEx`, `GetPerformanceInfo` e `NtQuerySystemInformation(80)`.
 3. Teste de execução CLI: `--help` e `--status`.
 4. Teste de inicialização da GUI em ambiente Windows.
+

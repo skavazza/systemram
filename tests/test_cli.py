@@ -19,3 +19,4 @@ def test_cli_status_run(capsys):
     captured = capsys.readouterr()
     assert code == 0
     assert "Memória Física" in captured.out or "Total RAM" in captured.out or "Uso de Memória" in captured.out
+

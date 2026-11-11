@@ -36,3 +36,4 @@ def test_tabs_update_data(qapp):
     priorities = get_priority_breakdown()
     t3.update_data(priorities)
     assert t3.table.rowCount() == 8
+

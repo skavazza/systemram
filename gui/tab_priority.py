@@ -78,3 +78,4 @@ class TabPriority(QWidget):
             self.table.setItem(row, 2, item_pages)
             self.table.setItem(row, 3, item_mb)
             self.table.setItem(row, 4, item_pct)
+
